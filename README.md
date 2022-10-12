@@ -2,6 +2,19 @@
 
 #PraTodosVerem é um projeto para geração automatizada de legendas para imagens de redes sociais.
 
+## Download dos Dados (com o DVC)
+
+Os dados foram versionados com o [DVC](https://dvc.org/) e utilizam o [Google Drive](https://dvc.org/doc/user-guide/how-to/setup-google-drive-remote#using-a-custom-google-cloud-project-recommended) como remote.<br>
+Solicite permissão de acesso ao administrador do projeto (`fabio.beranizo@gmail.com`).<br>
+A partir do diretório raiz rode o seguinte comando:
+
+```bash
+dvc pull
+```
+
+A pasta [data/raw/posts/](./data/raw/posts/) possui os dados brutos, adquiridos com a ferramenta de coleta.<br>
+O nome de cada pasta indica a data/hora que o post foi publicado (ex: 202210092332). Dentro da pasta estão as imagens, autor e descrição da publicação (sem formatação).
+
 ## Data Collection
 
 O Selenium WebDriver automatiza a coleta de dados de publicações em redes sociais (no momento, apenas Instagram).
@@ -14,7 +27,8 @@ export INSTAGRAM_USERNAME="<seu-nome-de-usuario>"
 export INSTAGRAM_PASSWORD="<sua-senha-nao-faca-commit-dela>"
 python -m pra_todos_verem.data_collection.collect \
     --query PraTodosVerem \
-    --output_path data/raw/posts/
+    --output_path data/raw/posts/ \
+    --max_downloads 100
 ```
 
 Parâmetros:
@@ -33,6 +47,10 @@ optional arguments:
   --max_downloads MAX_DOWNLOADS
                         Total de publicações visitadas. Default: 5.
 ```
+
+## Notebooks
+
+- [Análise exploratória](./notebooks/0_Journey_Through_Data.ipynb)
 
 ## Materiais Úteis
 

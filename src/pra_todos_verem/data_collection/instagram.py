@@ -1,12 +1,18 @@
 import mimetypes
 import os
+from time import sleep
 from typing import Generator, Optional
 
 import dateutil.parser
 import requests
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import (
+    ElementNotInteractableException,
+    NoSuchElementException,
+    TimeoutException,
+)
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -30,12 +36,8 @@ class InstagramCrawler:
         max_downloads: int = 10,
     ):
         self.save_path = save_path
-        self.search_url = quote_plus(
-            f"https://www.instagram.com/explore/tags/{query.lower()}/"
-        )
-        self.logon_url = (
-            f"https://www.instagram.com/accounts/login/?next={self.search_url}"
-        )
+        self.search_url = f"https://www.instagram.com/explore/tags/{query.lower()}/"
+        self.logon_url = f"https://www.instagram.com/accounts/login/?next={quote_plus(self.search_url)}"
         self.username = os.environ["INSTAGRAM_USERNAME"]
         self.password = os.environ["INSTAGRAM_PASSWORD"]
         self.max_downloads = max_downloads
@@ -54,11 +56,8 @@ class InstagramCrawler:
 
         for index in range(0, self.max_downloads):
             try:
-                print(f"Visiting post {index + 1} of {self.max_downloads}", sep=" ")
                 self.goto_result(index)
                 self.download_data()
-                # retorna aos resultados para visitar a próxima publicação
-                self.browser.back()
             except NoSuchElementException:
                 print("Unexpected error! Continue to next...")
 
@@ -99,25 +98,40 @@ class InstagramCrawler:
         Procura por um link de uma publicação e o visita para ver os detalhes.
         """
         # uma ação de espera é necessária até que os resultados da busca estejam prontos para uso.
-        try:
-            max_wait_in_seconds = 60
-            result_element = WebDriverWait(
-                self.browser, timeout=max_wait_in_seconds
-            ).until(
-                EC.presence_of_all_elements_located(
-                    (By.XPATH, "//article[last()]//a[starts-with(@href, '/p/')]")
+        max_attempts = 2
+        max_wait_in_seconds = 30
+        for attempt in range(1, max_attempts + 1):
+            try:
+                if index == 0:
+                    link_element = WebDriverWait(
+                        self.browser, timeout=max_wait_in_seconds
+                    ).until(EC.element_to_be_clickable((By.XPATH, "//article[last()]")))
+
+                    if link_element.is_displayed():
+                        link_element.click()
+
+                else:
+                    overlay_element = WebDriverWait(
+                        self.browser, timeout=max_wait_in_seconds
+                    ).until(
+                        EC.element_to_be_clickable(
+                            (By.XPATH, "//div[@id='scrollview']")
+                        )
+                    )
+                    if overlay_element.is_displayed():
+                        overlay_element.send_keys(Keys.ARROW_RIGHT)
+            except (ElementNotInteractableException, TimeoutException) as e:
+                # BUG
+                # o wait pode acessar elementos invisíveis. neste caso, ocorre uma ElementNotInteractableException.
+                # tenta novamente, no entanto, não garante sucesso.
+                print(e)
+                print(
+                    f"Trying again in a few seconds... Attempt {attempt} of {max_attempts}"
                 )
-            )[
-                index
-            ]
-
-            if result_element.is_displayed():
-                post_url = result_element.get_attribute("href")
-                print(post_url)
-                self.browser.get(post_url)
-
-        except IndexError:
-            print(f"All results were visited. Exiting...")
+                sleep(2)
+            else:
+                print(f"Visiting post {index + 1} of {self.max_downloads}")
+                break
 
     def download_data(self):
         """
@@ -159,7 +173,9 @@ class InstagramCrawler:
         """
         max_wait_in_seconds = 30
         time_element = WebDriverWait(self.browser, timeout=max_wait_in_seconds).until(
-            EC.element_to_be_clickable((By.XPATH, "//article[last()]//time"))
+            EC.element_to_be_clickable(
+                (By.XPATH, "//article[@role='presentation']//time")
+            )
         )
         post_datetime_str = time_element.get_attribute("datetime")
 
@@ -177,7 +193,9 @@ class InstagramCrawler:
         # procura e salva as imagens da publicação
         max_wait_in_seconds = 10
         for element in WebDriverWait(self.browser, timeout=max_wait_in_seconds).until(
-            EC.presence_of_all_elements_located((By.XPATH, "//article[last()]//img"))
+            EC.presence_of_all_elements_located(
+                (By.XPATH, "//article[@role='presentation']//img")
+            )
         ):
             image_url = element.get_attribute("src")
             yield image_url
@@ -226,7 +244,10 @@ class InstagramCrawler:
         max_wait_in_seconds = 30
         span_element = WebDriverWait(self.browser, timeout=max_wait_in_seconds).until(
             EC.element_to_be_clickable(
-                (By.XPATH, "//article[last()]//h2/following-sibling::div/span")
+                (
+                    By.XPATH,
+                    "//article[@role='presentation']//h2/following-sibling::div/span",
+                )
             )
         )
         return span_element.text
@@ -241,7 +262,9 @@ class InstagramCrawler:
         """
         max_wait_in_seconds = 30
         link_element = WebDriverWait(self.browser, timeout=max_wait_in_seconds).until(
-            EC.element_to_be_clickable((By.XPATH, "//article[last()]//h2//a"))
+            EC.element_to_be_clickable(
+                (By.XPATH, "//article[@role='presentation']//h2//a")
+            )
         )
         return link_element.text
 

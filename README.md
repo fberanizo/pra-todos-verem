@@ -1,4 +1,4 @@
-# #PraTodosVerem (🚧In-Progress🚧)
+# #PraTodosVerem (🚧In Progress🚧)
 
 #PraTodosVerem é um projeto para geração automatizada de legendas para imagens de redes sociais.
 
@@ -13,6 +13,7 @@ A implementação faz uso do [Geckodriver](https://github.com/mozilla/geckodrive
 export INSTAGRAM_USERNAME="<seu-nome-de-usuario>"
 export INSTAGRAM_PASSWORD="<sua-senha-nao-faca-commit-dela>"
 python -m pra_todos_verem.data_collection.collect \
+    --query PraTodosVerem \
     --output_path data/raw/posts/
 ```
 
@@ -25,6 +26,7 @@ Ferramenta de coleta de imagens em publicações #PraTodosVerem
 
 optional arguments:
   -h, --help            show this help message and exit
+  --query QUERY         Query de busca. Default: PraTodosVerem
   --output_path OUTPUT_PATH
                         Diretório onde salvar os dados 'raw' (imagens e textos). Default: data/raw/posts/
   --headless            Habilita headless browsing.

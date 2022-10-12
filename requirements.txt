@@ -9,3 +9,15 @@ python-dateutil==2.8.2
 
 # Git for data scientists - manage your code and data together
 dvc[gdrive]==2.6.4
+
+# JupyterLab computational environment
+jupyterlab==3.4.8
+
+# TensorFlow is an open source machine learning framework for everyone
+tensorflow==2.10.0
+
+# Modules for machine learning and data mining
+scikit-learn==1.1.2
+
+# Plotting package
+plotly==5.10.0

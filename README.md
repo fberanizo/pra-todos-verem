@@ -51,6 +51,7 @@ optional arguments:
 ## Notebooks
 
 - [Análise exploratória](./notebooks/0_Journey_Through_Data.ipynb)
+- [Anotação não-supervisionada](./notebooks/1_Categorization_Procedure.ipynb)
 
 ## Materiais Úteis
 

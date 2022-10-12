@@ -6,3 +6,6 @@ requests==2.28.1
 
 # Extensions to the standard Python datetime module
 python-dateutil==2.8.2
+
+# Git for data scientists - manage your code and data together
+dvc[gdrive]==2.6.4

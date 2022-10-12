@@ -1,4 +1,4 @@
-# #PraTodosVerem
+# #PraTodosVerem (🚧In-Progress🚧)
 
 #PraTodosVerem é um projeto para geração automatizada de legendas para imagens de redes sociais.
 

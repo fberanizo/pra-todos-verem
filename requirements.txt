@@ -1,3 +1,5 @@
+--find-links https://download.pytorch.org/whl/torch_stable.html
+
 # Automate web browser interaction from Python
 selenium==3.141.0
 
@@ -21,3 +23,7 @@ scikit-learn==1.1.2
 
 # Plotting package
 plotly==5.10.0
+
+# Tensors and Dynamic neural networks in Python
+torch==1.12.1+cpu
+torchvision==0.13.1

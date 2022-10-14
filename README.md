@@ -2,6 +2,14 @@
 
 #PraTodosVerem é um projeto para geração automatizada de legendas para imagens de redes sociais.
 
+> :warning: Ferramentas de automação (como esta) **não resolvem o problema da acessibilidade!** Antes de tudo, procure a orientação de um especialista em acessibilidade.
+
+## Exemplo
+
+<img src="./sample.jpg" width="250" />
+
+> #PraCegoVer #PraTodosVerem: Plano de fundo azul claro com branco. No topo da imagem, lado esquerdo, o logotipo com o brasão Cidade de São Paulo Pessoa com Deficiência. Centralizado, a frase: Você conhece? Abaixo, a ilustração de um mapa, com vários ícones de localização, que sinalizam: assistência social, esporte, saúde, educação e cultura. Mais texto, abaixo, em azul: Mapa da Rede serviços acessíveis para pessoas com deficiência.
+
 ## Download dos Dados (com o DVC)
 
 Os dados foram versionados com o [DVC](https://dvc.org/) e utilizam o [Google Drive](https://dvc.org/doc/user-guide/how-to/setup-google-drive-remote#using-a-custom-google-cloud-project-recommended) como remote.<br>

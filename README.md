@@ -42,7 +42,7 @@ python -m pra_todos_verem.data_collection.collect \
 Parâmetros:
 
 ```
-usage: collect.py [-h] [--output_path OUTPUT_PATH] [--headless] [--max_downloads MAX_DOWNLOADS]
+usage: collect.py [-h] [--query QUERY] [--output_path OUTPUT_PATH] [--headless] [--max_downloads MAX_DOWNLOADS]
 
 Ferramenta de coleta de imagens em publicações #PraTodosVerem
 
@@ -59,7 +59,7 @@ optional arguments:
 ## Notebooks
 
 - [Análise exploratória](./notebooks/0_Journey_Through_Data.ipynb)
-- [Anotação não-supervisionada](./notebooks/1_Categorization_Procedure.ipynb)
+- [Categorização em Foto, Arte, Heterogêneo](./notebooks/1_Categorization_Procedure.ipynb)
 
 ## Materiais Úteis
 

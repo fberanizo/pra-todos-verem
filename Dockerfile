@@ -25,7 +25,7 @@ RUN wget https://github.com/mozilla/geckodriver/releases/download/v0.31.0/geckod
 
 COPY ./requirements.txt /app/requirements.txt
 
-RUN pip install -r /app/requirements.txt
+RUN pip install -r /app/requirements.txt --find-links https://download.pytorch.org/whl/torch_stable.html
 
 COPY ./src /app/src
 COPY ./setup.py /app/setup.py

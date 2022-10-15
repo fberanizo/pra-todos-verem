@@ -1,0 +1,4 @@
+outs:
+- md5: 828140a5f0a78d3f7071903924fc0c73
+  size: 600
+  path: caption.txt

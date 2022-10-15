@@ -177,10 +177,14 @@ class LinkedInCrawler:
         max_wait_in_seconds = 10
         for element in WebDriverWait(self.browser, timeout=max_wait_in_seconds).until(
             EC.presence_of_all_elements_located(
-                (By.XPATH, f"//div[@data-id='{data_id}']//img")
+                (By.XPATH, f"//div[@data-id='{data_id}']//*[self::img or self::video]")
             )
         ):
-            image_url = element.get_attribute("src")
+            if element.tag_name == "img":
+                image_url = element.get_attribute("src")
+            else:
+                image_url = element.get_attribute("poster")
+
             yield image_url
 
     def download_image(self, image_url: Optional[str], image_filepath: str):

@@ -1,0 +1,4 @@
+outs:
+- md5: d51db34dfe5a0b32300f2616c041b5df
+  size: 21
+  path: author.txt

@@ -4,29 +4,38 @@ Ferramenta de coleta de imagens em publicações #PraTodosVerem.
 import argparse
 import sys
 
-from pra_todos_verem.data_collection import instagram
+from pra_todos_verem.data_collection import instagram, linkedin
 
 
 DESCRIPTION = "Ferramenta de coleta de imagens em publicações #PraTodosVerem"
 
 
-def collect(query: str, output_path: str, headless: bool, max_downloads: int):
+def collect(website: str, query: str, output_path: str, headless: bool, max_downloads: int):
     """
     Coleta imagens em publicações com Selenium WebDriver.
 
     Parameters
     ----------
+    website : str
     query : str
     output_path : str
     headless : bool
     max_downloads : int
     """
-    instagram.InstagramCrawler(
-        query=query,
-        save_path=output_path,
-        headless=headless,
-        max_downloads=max_downloads,
-    ).run()
+    if website.lower() == "instagram":
+        instagram.InstagramCrawler(
+            query=query,
+            save_path=output_path,
+            headless=headless,
+            max_downloads=max_downloads,
+        ).run()
+    elif website.lower() == "linkedin":
+        linkedin.LinkedInCrawler(
+            query=query,
+            save_path=output_path,
+            headless=headless,
+            max_downloads=max_downloads,
+        ).run()
 
 
 def parse_args(args):
@@ -37,6 +46,12 @@ def parse_args(args):
         description=DESCRIPTION,
     )
     parser.add_argument(
+        "--website",
+        type=str,
+        default="linkedin",
+        help="Website",
+    )
+    parser.add_argument(
         "--query",
         type=str,
         default="PraTodosVerem",
@@ -45,7 +60,7 @@ def parse_args(args):
     parser.add_argument(
         "--output_path",
         type=str,
-        default="data/raw/posts/",
+        default="data/raw/",
         help="Diretório onde salvar os dados 'raw' (imagens e textos)",
     )
     parser.add_argument("--headless", action="count", help="Habilita headless browsing")
@@ -61,4 +76,4 @@ def parse_args(args):
 if __name__ == "__main__":
     args = parse_args(sys.argv[1:])
 
-    collect(args.query, args.output_path, args.headless, args.max_downloads)
+    collect(args.website, args.query, args.output_path, args.headless, args.max_downloads)

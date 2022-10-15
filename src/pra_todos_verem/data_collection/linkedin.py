@@ -3,7 +3,6 @@ import os
 from time import sleep
 from typing import Generator, Optional
 
-import dateutil.parser
 import requests
 from selenium import webdriver
 from selenium.common.exceptions import (
@@ -19,13 +18,13 @@ from selenium.webdriver.support import expected_conditions as EC
 from urllib.parse import quote_plus
 
 
-class InstagramCrawler:
+class LinkedInCrawler:
     """
-    Crawler para coletar imagens no Instagram buscando por publicações de uma query.
+    Crawler para coletar imagens no LinkedIn buscando por publicações de uma query.
 
     Requer a definição de duas variáveis de ambiente:
-    - INSTAGRAM_USERNAME
-    - INSTAGRAM_PASSWORD
+    - LINKEDIN_USERNAME
+    - LINKEDIN_PASSWORD
     """
 
     def __init__(
@@ -35,11 +34,11 @@ class InstagramCrawler:
         headless: bool = False,
         max_downloads: int = 10,
     ):
-        self.save_path = os.path.join(save_path, "instagram")
-        self.search_url = f"https://www.instagram.com/explore/tags/{query.lower()}/"
-        self.logon_url = f"https://www.instagram.com/accounts/login/?next={quote_plus(self.search_url)}"
-        self.username = os.environ["INSTAGRAM_USERNAME"]
-        self.password = os.environ["INSTAGRAM_PASSWORD"]
+        self.save_path = os.path.join(save_path, "linkedin")
+        self.search_url = f"https://www.linkedin.com/feed/hashtag/{query.lower()}/"
+        self.logon_url = f"https://www.linkedin.com/uas/login?session_redirect={quote_plus(self.search_url)}&trk=login_reg_redirect"
+        self.username = os.environ["LINKEDIN_USERNAME"]
+        self.password = os.environ["LINKEDIN_PASSWORD"]
         self.max_downloads = max_downloads
 
         # headless=True permite rodar a automação em um processo de CI, sem um display
@@ -54,10 +53,11 @@ class InstagramCrawler:
         self.launch()
         self.logon()
 
-        for index in range(0, self.max_downloads):
+        data_id = None
+        for _ in range(self.max_downloads):
             try:
-                self.goto_result(index)
-                self.download_data()
+                data_id = self.goto_result(data_id)
+                self.download_data(data_id)
             except NoSuchElementException:
                 print("Unexpected error! Continue to next...")
 
@@ -65,7 +65,7 @@ class InstagramCrawler:
 
     def launch(self):
         """
-        Abre o navegador e acessa a tela de logon do Instagram.
+        Abre o navegador e acessa a tela de logon do Linkedin.
         """
         self.browser.get(self.logon_url)
 
@@ -76,50 +76,55 @@ class InstagramCrawler:
         max_wait_in_seconds = 30
         username_element = WebDriverWait(
             self.browser, timeout=max_wait_in_seconds
-        ).until(EC.element_to_be_clickable((By.XPATH, "//input[@name='username']")))
+        ).until(EC.element_to_be_clickable((By.XPATH, "//input[@id='username']")))
         username_element.send_keys(self.username)
 
-        # uma ação de espera é necessária porque input type=password leva alguns milisegundos para carregar na tela.
-        # se não carregar em até 10 segundos, interrompe o teste com uma exceção
         password_element = self.browser.find_element_by_xpath(
-            "//input[@name='password']"
+            "//input[@id='password']"
         )
         password_element.send_keys(self.password)
 
         button_element = WebDriverWait(self.browser, timeout=max_wait_in_seconds).until(
-            EC.element_to_be_clickable((By.XPATH, "//button[./div/text()='Log In']"))
+            EC.element_to_be_clickable((By.XPATH, "//button[text()='Sign in']"))
         )
         button_element.click()
 
         # neste passo, se autenticação de 2 fatores está habilitada, então o usuário precisa autorizar o login
 
-    def goto_result(self, index: int):
+    def goto_result(self, previous_data_id: Optional[str]):
         """
         Procura por um link de uma publicação e o visita para ver os detalhes.
         """
-        # uma ação de espera é necessária até que os resultados da busca estejam prontos para uso.
-        max_attempts = 2
-        max_wait_in_seconds = 30
+        max_attempts = 3
+        max_wait_in_seconds = 10
+
         for attempt in range(1, max_attempts + 1):
             try:
-                if index == 0:
-                    link_element = WebDriverWait(
-                        self.browser, timeout=max_wait_in_seconds
-                    ).until(EC.element_to_be_clickable((By.XPATH, "//article[last()]")))
-
-                    if link_element.is_displayed():
-                        link_element.click()
-
+                if previous_data_id is None:
+                    query = "//div[starts-with(@data-id,'urn:li:activity')]"
                 else:
-                    overlay_element = WebDriverWait(
-                        self.browser, timeout=max_wait_in_seconds
-                    ).until(
-                        EC.element_to_be_clickable(
-                            (By.XPATH, "//div[@id='scrollview']")
-                        )
+                    query = f"//div[@data-id='{previous_data_id}']/../following-sibling::div[{attempt}]//div[starts-with(@data-id,'urn:li:activity')]"
+
+                div_element = WebDriverWait(
+                    self.browser, timeout=max_wait_in_seconds
+                ).until(
+                    EC.element_to_be_clickable(
+                        (By.XPATH, query)
                     )
-                    if overlay_element.is_displayed():
-                        overlay_element.send_keys(Keys.ARROW_RIGHT)
+                )
+                data_id = div_element.get_attribute("data-id")
+
+                self.browser.execute_script("arguments[0].scrollIntoView();", div_element)
+
+                span_element = WebDriverWait(self.browser, timeout=max_wait_in_seconds).until(
+                    EC.element_to_be_clickable(
+                        (By.XPATH, f"//div[@data-id='{data_id}']//span[contains(@class,'feed-shared-inline-show-more-text__see-more-text')]")
+                    )
+                )
+                span_element.click()
+
+                print(f"Visiting post {data_id}")
+                return data_id
             except (ElementNotInteractableException, TimeoutException) as e:
                 # BUG
                 # o wait pode acessar elementos invisíveis. neste caso, ocorre uma ElementNotInteractableException.
@@ -129,21 +134,16 @@ class InstagramCrawler:
                     f"Trying again in a few seconds... Attempt {attempt} of {max_attempts}"
                 )
                 sleep(2)
-            else:
-                print(f"Visiting post {index + 1} of {self.max_downloads}")
-                break
 
-    def download_data(self):
+    def download_data(self, data_id):
         """
         Faz o download dos dados de interesse da publicação: imagem, texto, autor e data de publicação.
         """
-        post_datetime_str = self.find_post_datetime()
-
         # cria uma pasta para os dados da publicação
-        data_path = os.path.join(self.save_path, post_datetime_str)
+        data_path = os.path.join(self.save_path, data_id.split(":")[-1])
         os.makedirs(data_path, exist_ok=True)
 
-        image_urls = self.find_post_image_urls()
+        image_urls = self.find_post_image_urls(data_id)
 
         for index, image_url in enumerate(image_urls):
             image_filename = f"{index}"
@@ -151,38 +151,21 @@ class InstagramCrawler:
 
             self.download_image(image_url, image_filepath)
 
-        caption = self.find_post_caption()
+        caption = self.find_post_caption(data_id)
         caption_filename = "caption.txt"
         caption_filepath = os.path.join(data_path, caption_filename)
         with open(caption_filepath, "w") as file:
             file.write(caption)
 
-        author = self.find_post_author()
+        author = self.find_post_author(data_id)
         author_filename = "author.txt"
         author_filepath = os.path.join(data_path, author_filename)
         with open(author_filepath, "w") as file:
             file.write(author)
 
-    def find_post_datetime(self) -> str:
-        """
-        Extrai a data de publicação.
+        self.browser.find_element_by_xpath("//body").send_keys(Keys.PAGE_DOWN)
 
-        Returns
-        -------
-        str
-        """
-        max_wait_in_seconds = 30
-        time_element = WebDriverWait(self.browser, timeout=max_wait_in_seconds).until(
-            EC.element_to_be_clickable(
-                (By.XPATH, "//article[@role='presentation']//time")
-            )
-        )
-        post_datetime_str = time_element.get_attribute("datetime")
-
-        post_datetime = dateutil.parser.parse(post_datetime_str)
-        return post_datetime.strftime("%Y%m%d%H%M")
-
-    def find_post_image_urls(self) -> Generator[str, None, None]:
+    def find_post_image_urls(self, data_id: str) -> Generator[str, None, None]:
         """
         Extrai as URLs das imagens da publicação.
 
@@ -194,7 +177,7 @@ class InstagramCrawler:
         max_wait_in_seconds = 10
         for element in WebDriverWait(self.browser, timeout=max_wait_in_seconds).until(
             EC.presence_of_all_elements_located(
-                (By.XPATH, "//article[@role='presentation']//img")
+                (By.XPATH, f"//div[@data-id='{data_id}']//img")
             )
         ):
             image_url = element.get_attribute("src")
@@ -233,7 +216,7 @@ class InstagramCrawler:
         with open(image_filepath, "wb") as file:
             file.write(r.content)
 
-    def find_post_caption(self) -> str:
+    def find_post_caption(self, data_id: str) -> str:
         """
         Extrai a descrição da publicação.
 
@@ -241,18 +224,18 @@ class InstagramCrawler:
         -------
         str
         """
-        max_wait_in_seconds = 30
-        span_element = WebDriverWait(self.browser, timeout=max_wait_in_seconds).until(
+        max_wait_in_seconds = 10
+        div_element = WebDriverWait(self.browser, timeout=max_wait_in_seconds).until(
             EC.element_to_be_clickable(
                 (
                     By.XPATH,
-                    "//article[@role='presentation']//h2/following-sibling::div/span",
+                    f"//div[@data-id='{data_id}']//div[@class='feed-shared-update-v2__description-wrapper']",
                 )
             )
         )
-        return span_element.text
+        return div_element.text
 
-    def find_post_author(self) -> str:
+    def find_post_author(self, data_id: str) -> str:
         """
         Extrai o autor da publicação.
 
@@ -260,13 +243,13 @@ class InstagramCrawler:
         -------
         str
         """
-        max_wait_in_seconds = 30
-        link_element = WebDriverWait(self.browser, timeout=max_wait_in_seconds).until(
+        max_wait_in_seconds = 10
+        div_element = WebDriverWait(self.browser, timeout=max_wait_in_seconds).until(
             EC.element_to_be_clickable(
-                (By.XPATH, "//article[@role='presentation']//h2//a")
+                (By.XPATH, f"//div[@data-id='{data_id}']//span[@class='feed-shared-actor__title']")
             )
         )
-        return link_element.text
+        return div_element.text.split("\n")[0]
 
     def finalize(self):
         """

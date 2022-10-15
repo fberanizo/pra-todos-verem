@@ -20,37 +20,40 @@ A partir do diretório raiz rode o seguinte comando:
 dvc pull
 ```
 
-A pasta [data/raw/posts/](./data/raw/posts/) possui os dados brutos, adquiridos com a ferramenta de coleta.<br>
+A pasta [data/raw/](./data/raw/) possui os dados brutos, adquiridos com a ferramenta de coleta.<br>
 O nome de cada pasta indica a data/hora que o post foi publicado (ex: 202210092332). Dentro da pasta estão as imagens, autor e descrição da publicação (sem formatação).
 
 ## Data Collection
 
-O Selenium WebDriver automatiza a coleta de dados de publicações em redes sociais (no momento, apenas Instagram).
+O Selenium WebDriver automatiza a coleta de dados de publicações em redes sociais (no momento,  LinkedIn e Instagram).
 A imagem docker `docker.io/fberanizo/pra-todos-verem-data-collection:1.0.0` já possui todas as dependências instaladas e é a forma mais fácil de rodar este passo.
 
 A implementação faz uso do [Geckodriver](https://github.com/mozilla/geckodriver/releases) e requer a instalação do [Mozilla Firefox](https://www.mozilla.org/en-US/firefox/new/).
 
 ```bash
-export INSTAGRAM_USERNAME="<seu-nome-de-usuario>"
-export INSTAGRAM_PASSWORD="<sua-senha-nao-faca-commit-dela>"
+export LINKEDIN_USERNAME="<seu-nome-de-usuario>"
+export LINKEDIN_PASSWORD="<sua-senha-nao-faca-commit-dela>"
 python -m pra_todos_verem.data_collection.collect \
+    --website linkedin \
     --query PraTodosVerem \
-    --output_path data/raw/posts/ \
+    --output_path data/raw/ \
     --max_downloads 100
 ```
 
 Parâmetros:
 
 ```
-usage: collect.py [-h] [--query QUERY] [--output_path OUTPUT_PATH] [--headless] [--max_downloads MAX_DOWNLOADS]
+usage: collect.py [-h] [--website WEBSITE] [--query QUERY] [--output_path OUTPUT_PATH] [--headless]
+                  [--max_downloads MAX_DOWNLOADS]
 
 Ferramenta de coleta de imagens em publicações #PraTodosVerem
 
 optional arguments:
   -h, --help            show this help message and exit
+  --website WEBSITE     Website. Default: linkedin
   --query QUERY         Query de busca. Default: PraTodosVerem
   --output_path OUTPUT_PATH
-                        Diretório onde salvar os dados 'raw' (imagens e textos). Default: data/raw/posts/
+                        Diretório onde salvar os dados 'raw' (imagens e textos). Default: data/raw/
   --headless            Habilita headless browsing.
   --max_downloads MAX_DOWNLOADS
                         Total de publicações visitadas. Default: 5.

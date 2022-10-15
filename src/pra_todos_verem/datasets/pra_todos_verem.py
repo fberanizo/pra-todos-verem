@@ -21,7 +21,7 @@ class PraTodosVerem(Dataset):
     Examples
     --------
     import pra_todos_verem.datasets as datasets
-    ptv = datasets.PraTodosVerem(root='data/raw/posts/')
+    ptv = datasets.PraTodosVerem(root='data/raw/')
 
     print('Number of samples: ', len(ptv))
     img, target = ptv[3] # load 4th sample
@@ -32,7 +32,7 @@ class PraTodosVerem(Dataset):
 
     def __init__(
         self,
-        root: str = "data/raw/posts/",
+        root: str = "data/raw/",
     ):
         """
         #PraTodosVerem dataset.
